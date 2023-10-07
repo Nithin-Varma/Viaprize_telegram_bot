@@ -1,0 +1,27 @@
+{
+  "name": "viaprize-telegram-voting-bot",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "author": "Nithin-Varma(Nithin Mengani)",
+  "license": "MIT",
+  "private": null,
+  "devDependencies": {
+    "@types/jest": "^29.5.5",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.1.1",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "mongodb": "^6.1.0",
+    "mongoose": "^7.6.0",
+    "telegraf": "^4.14.0",
+    "ts-node": "^10.9.1"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node index.ts",
+    "test": "jest",
+    "dev": "ts-node --esm index.ts"
+  }
+}
