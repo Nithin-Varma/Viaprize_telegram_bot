@@ -28,8 +28,18 @@ const User = mongoose.model('User', userSchema);
 
 const bot = new Telegraf(process.env.BOT_TOKEN || 'YOUR_BOT_TOKEN');
 
-bot.start((ctx) => {
-  ctx.reply('Welcome to the project voting bot! Use the /projects command to see the list of projects you can vote for.');
+bot.start(async (ctx) => {
+  const chatId = ctx.chat.id;
+
+  let user = await User.findOne({ chatId });
+
+  if (!user) {
+    user = new User({ chatId, tokens: 60 }); 
+    await user.save();
+    ctx.reply('Welcome to the bot! You have been added to the database and given 60 tokens.');
+  } else {
+    ctx.reply('Welcome back! You already have an account with 60 tokens.');
+  }
 });
 
 bot.help((ctx) => {
