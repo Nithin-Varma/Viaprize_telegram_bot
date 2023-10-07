@@ -36,9 +36,9 @@ bot.start(async (ctx) => {
   if (!user) {
     user = new User({ chatId, tokens: 60 }); 
     await user.save();
-    ctx.reply('Welcome to the bot! You have been added to the database and given 60 tokens.');
+    ctx.reply('Welcome to the bot! You have been added to the database and given 60 tokens. click /projects to start voting projects');
   } else {
-    ctx.reply('Welcome back! You already have an account with 60 tokens.');
+    ctx.reply(`Welcome back! You already have an account with ${user.tokens} tokens. click /projects to start voting projects`);
   }
 });
 
@@ -117,7 +117,6 @@ bot.action(/vote:(.*)/, async (ctx) => {
     return;
   }
 
-  // Update the project's vote count and deduct one token from the user
   if (project.votes !== undefined) {
     project.votes += 5;
     await project.save();
@@ -126,9 +125,9 @@ bot.action(/vote:(.*)/, async (ctx) => {
     return;
   }
 
-  // // Deduct one token from the user
-  // user.tokens -= 1;
-  // await user.save();
+  // Deduct one token from the user
+  user.tokens -= 5;
+  await user.save();
 
   ctx.answerCbQuery(`You have voted for ${project?.name}. You now have ${user.tokens} tokens left.`);
 });
