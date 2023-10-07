@@ -28,7 +28,7 @@ const User = mongoose.model('User', userSchema);
 
 const bot = new Telegraf(process.env.BOT_TOKEN || 'YOUR_BOT_TOKEN');
 
-bot.start(async (ctx) => {
+bot.start(async (ctx: any) => {
   const chatId = ctx.chat.id;
 
   let user = await User.findOne({ chatId });
@@ -42,7 +42,7 @@ bot.start(async (ctx) => {
   }
 });
 
-bot.help((ctx) => {
+bot.help((ctx: any) => {
   ctx.reply('Here are the available commands:\n/projects - List available projects for voting\n/vote - Vote for a project');
 });
 
@@ -68,7 +68,7 @@ async function addProjects() {
   }
 }
 
-bot.command('addprojects', async (ctx) => {
+bot.command('addprojects', async (ctx: any) => {
   const chatId = ctx.chat.id;
 
   if (ctx.from.id !== 1803838503) {
@@ -81,7 +81,7 @@ bot.command('addprojects', async (ctx) => {
   ctx.reply('New projects have been added to the database.');
 });
 
-bot.command('projects', async (ctx) => {
+bot.command('projects', async (ctx: any) => {
   const chatId = ctx.chat.id;
   const projects = await Project.find();
 
@@ -99,7 +99,7 @@ bot.command('projects', async (ctx) => {
 
 });
 
-bot.action(/vote:(.*)/, async (ctx) => {
+bot.action(/vote:(.*)/, async (ctx: any) => {
   const chatId = ctx?.chat?.id;
   const projectId = String(ctx.match[1]);
 
