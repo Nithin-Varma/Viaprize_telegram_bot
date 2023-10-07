@@ -11,90 +11,116 @@ db.once('open', () => {
   console.log('Connected to MongoDB');
 });
 
+const projectSchema = new mongoose.Schema({
+  name: String,
+  description: String,
+  votes: Number,
+});
+
+const Project = mongoose.model('Project', projectSchema);
+
 const userSchema = new mongoose.Schema({
-    chatId: Number,
-    tokens: Number,
-    projects: Object,
-  });
-  
-  const User = mongoose.model('User', userSchema);
-  
+  chatId: Number,
+  tokens: Number,
+});
 
-  const bot = new Telegraf(process.env.BOT_TOKEN as string);
+const User = mongoose.model('User', userSchema);
 
-  bot.on('text', async (ctx) => {
-    const chatId = ctx.chat.id;
-    let user = await User.findOne({ chatId });
+const bot = new Telegraf(process.env.BOT_TOKEN || 'YOUR_BOT_TOKEN');
 
-    if (ctx.message.text.startsWith('/')) {
-      return;
-    }
-  
-    if (!user) {
-      user = new User({ chatId, tokens: 60, projects: {} });
-      await user.save();
-      ctx.reply('You have been added to the database and given 60 tokens.');
-    } else if (Object.keys(user.projects || {}).length === 0) {
-      ctx.reply('You have not voted for any projects yet.');
-    } else {
-      ctx.reply('You have already voted.');
-    }
-  });
-  
-  bot.command('projects', async (ctx) => {
-    const chatId = ctx.chat.id;
-    const user = await User.findOne({ chatId });
-  
-    if (!user) {
-      ctx.reply("You are not able to vote for projects...");
-      return;
-    } else {
-      ctx.reply(`you have ${user.tokens} tokens to vote with.`);
-    }
-  
-    const projects = [
-      'Project 1',
-      'Project 2',
-      'Project 3',
-      'Project 4',
-      'Project 5',
-      'Project 6',
-      'Project 7',
-      'Project 8',
-    ];
-  
-    const keyboard = Markup.inlineKeyboard(
-      projects.map((project) => Markup.button.callback(project, `donate:${project}`)),
-      {}
-    );
-  
-    ctx.reply('Here are the projects you can donate to:', keyboard);
-  });
-  
+bot.start((ctx) => {
+  ctx.reply('Welcome to the project voting bot! Use the /projects command to see the list of projects you can vote for.');
+});
 
-  bot.action(/donate:(.*)/, async (ctx) => {
-    const chatId = ctx?.chat?.id;
-    let user = await User.findOne({ chatId });
-  
-    if (!user) {
-      ctx.answerCbQuery('You need to vote first to donate tokens.');
-      return;
-    }
-  
-    const [, project] = String(ctx.match[1]).split(':');
-    const tokensToDonate = parseInt(project.split(':')[2]);
-  
-    if (!user.tokens || tokensToDonate > user.tokens) {
-      ctx.answerCbQuery('You do not have enough tokens to donate.');
-      return;
-    }
-  
-    user.tokens -= tokensToDonate;
-    user.projects[project] = (user.projects[project] || 0) + tokensToDonate;
-    await user.save();
-  
-    ctx.answerCbQuery(`You have donated ${tokensToDonate} tokens to ${project}.`);
-  });
-  
-  
-  bot.launch();
+bot.help((ctx) => {
+  ctx.reply('Here are the available commands:\n/projects - List available projects for voting\n/vote - Vote for a project');
+});
+
+async function addProjects() {
+  const projectsToAdd = [
+    {
+      name: 'github plag checker',
+      description: 'plagcheck is a tool to check plagiarism in github repos. It is a command line tool which takes a github repo url as input and checks for plagiarism in the repo. It also provides a web interface to view the results.',
+      votes: 0,
+    },
+    {
+      name: 'github plag checker',
+      description: 'plagcheck is a tool to check plagiarism in github repos. It is a command line tool which takes a github repo url as input and checks for plagiarism in the repo. It also provides a web interface to view the results.',
+      votes: 0,
+    },
+  ];
+
+  try {
+    await Project.insertMany(projectsToAdd);
+    console.log('Projects added to the database.');
+  } catch (error) {
+    console.error('Error adding projects:', error);
+  }
+}
+
+bot.command('addprojects', async (ctx) => {
+  const chatId = ctx.chat.id;
+
+  if (ctx.from.id !== 1803838503) {
+    ctx.reply('You are not authorized to add projects.');
+    return;
+  }
+
+  await addProjects();
+
+  ctx.reply('New projects have been added to the database.');
+});
+
+bot.command('projects', async (ctx) => {
+  const chatId = ctx.chat.id;
+  const projects = await Project.find();
+
+  if (!projects || projects.length === 0) {
+    ctx.reply("There are no projects available for voting.");
+    return;
+  }
+
+  const keyboard = Markup.inlineKeyboard(
+    projects.map((project: any) => Markup.button.callback(project.name, `vote:${String(project._id)}`)),
+    {}
+  );
+
+  ctx.reply('Here are the projects you can vote for:', keyboard);
+
+});
+
+bot.action(/vote:(.*)/, async (ctx) => {
+  const chatId = ctx?.chat?.id;
+  const projectId = String(ctx.match[1]);
+
+  // Find the project by ID
+  const project = await Project.findById(projectId);
+  if (!project) {
+    ctx.answerCbQuery('Project not found.');
+    return;
+  }
+
+  // Check if the user has already voted for this project
+  const user = await User.findOne({ chatId });
+  if (!user || !user.tokens || user.tokens <= 0) {
+    ctx.answerCbQuery('You do not have enough tokens to vote.');
+    return;
+  }
+
+  // Update the project's vote count and deduct one token from the user
+  if (project.votes !== undefined) {
+    project.votes += 5;
+    await project.save();
+  } else {
+    ctx.answerCbQuery('Unable to vote for this project.');
+    return;
+  }
+
+  // // Deduct one token from the user
+  // user.tokens -= 1;
+  // await user.save();
+
+  ctx.answerCbQuery(`You have voted for ${project?.name}. You now have ${user.tokens} tokens left.`);
+});
+
+bot.launch();
